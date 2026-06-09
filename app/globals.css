@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --dash-card: #ffffff;
+  --dash-border: #e2e8f0;
+  --dash-header: #334155;
+  --dash-header-sub: #475569;
+  --dash-accent: #2563eb;
+  --dash-row-alt: #f1f5f9;
+  --dash-row-hover: #e8eef5;
 }
 
 @theme inline {
@@ -12,15 +19,305 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* ── Tarjetas del dashboard ── */
+.dash-card {
+  overflow: hidden;
+  border-radius: 0.75rem;
+  border: 1px solid var(--dash-border);
+  background: var(--dash-card);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+}
+
+.dash-card-header {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.625rem;
+  border-bottom: 1px solid var(--dash-border);
+  background: linear-gradient(to bottom, #fafbfc, #fff);
+  padding: 0.625rem 0.875rem;
+}
+
+@media (min-width: 640px) {
+  .dash-card-header {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+}
+
+.dash-stat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
+}
+
+.dash-stat-chip {
+  white-space: nowrap;
+  border-radius: 0.25rem;
+  background: #f1f5f9;
+  padding: 0.125rem 0.4375rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.dash-toolbar {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+@media (min-width: 640px) {
+  .dash-toolbar {
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+}
+
+.dash-toolbar-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.375rem;
+}
+
+@media (min-width: 640px) {
+  .dash-toolbar-actions {
+    display: flex;
+  }
+}
+
+.dash-card-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.dash-card-subtitle {
+  margin-top: 0.125rem;
+  font-size: 0.6875rem;
+  color: #64748b;
+}
+
+.dash-btn {
+  cursor: pointer;
+  border-radius: 0.375rem;
+  border: 1px solid var(--dash-border);
+  background: #fff;
+  padding: 0.3125rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #475569;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.dash-btn:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.dash-select {
+  cursor: pointer;
+  border-radius: 0.375rem;
+  border: 1px solid var(--dash-border);
+  background: #fff;
+  padding: 0.3125rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #334155;
+}
+
+.dash-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgb(59 130 246 / 15%);
+}
+
+.dash-chip {
+  cursor: pointer;
+  border-radius: 9999px;
+  border: 1px solid var(--dash-border);
+  background: #fff;
+  padding: 0.1875rem 0.5625rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.15s;
+}
+
+.dash-chip:hover {
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.dash-chip--active {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #fff;
+}
+
+.dash-chip--active:hover {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  color: #fff;
+}
+
+/* ── Tabla pivot ── */
+.pivot-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+.pivot-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.pivot-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.pivot-table {
+  width: 504px;
+  min-width: 504px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.6875rem;
+}
+
+.pivot-col-label {
+  width: 120px;
+}
+
+.pivot-col-metric {
+  width: 48px;
+}
+
+.pivot-col-metric-wide {
+  width: 52px;
+}
+
+@media (min-width: 640px) {
+  .pivot-scroll {
+    overflow-x: visible;
+  }
+
+  .pivot-table {
+    width: 100%;
+    min-width: 100%;
+    font-size: 0.75rem;
+  }
+
+  .pivot-col-label {
+    width: 30%;
+  }
+
+  .pivot-col-metric,
+  .pivot-col-metric-wide {
+    width: 10%;
+  }
+
+  .pivot-sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    box-shadow: 2px 0 6px -2px rgb(15 23 42 / 8%);
+  }
+
+  .pivot-table thead .pivot-sticky-col {
+    z-index: 4;
+  }
+
+  .pivot-table tfoot .pivot-sticky-col {
+    z-index: 3;
+  }
+}
+
+.pivot-vendor-row {
+  transition: opacity 0.2s ease;
+}
+
+.pivot-vendor-row--closed {
+  visibility: collapse;
+  opacity: 0;
+  height: 0;
+  line-height: 0;
+  pointer-events: none;
+}
+
+.pivot-vendor-row--closed td {
+  border-width: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+.pivot-vendor-row--open {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* ── Tablas de cuota ── */
+.cuota-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.cuota-table {
+  width: 100%;
+  min-width: 320px;
+  border-collapse: collapse;
+  font-size: 0.6875rem;
+}
+
+@media (min-width: 640px) {
+  .cuota-table {
+    font-size: 0.75rem;
+  }
+}
+
+/* Semáforo */
+.semaforo-badge {
+  display: inline-block;
+  min-width: 2.25rem;
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.semaforo-badge--green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.semaforo-badge--amber {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.semaforo-badge--red {
+  background: #fee2e2;
+  color: #991b1b;
 }

@@ -1,4 +1,5 @@
 import { getSheetValues } from "@/lib/google-sheets";
+import { emptyMmPdvEntry, type MmPdvEntry } from "@/lib/mm-pdv";
 import type { VentaRow } from "@/lib/venta";
 
 export type { VentaRow } from "@/lib/venta";
@@ -40,9 +41,10 @@ function getCell(
 function toVentaRow(
   cells: string[],
   headerIndex: Map<string, number>,
-  lookup: Map<string, string>,
+  lookup: Map<string, MmPdvEntry>,
 ): VentaRow {
   const dniResponsable = getCell(cells, headerIndex, ["DNI_RESPONSABLE"]);
+  const mmEntry = lookup.get(dniResponsable) ?? emptyMmPdvEntry();
 
   return {
     fecha: getCell(cells, headerIndex, ["FECHA"]),
@@ -61,14 +63,14 @@ function toVentaRow(
       "CODIGO PUNTO DE VENTA",
       "CÓDIGO PUNTO DE VENTA",
     ]),
-    nombreVendedorZonificado:
-      lookup.get(dniResponsable) ?? "Sin vendedor zonificado",
+    nombreVendedorZonificado: mmEntry.nombreVendedorZonificado,
+    multimarca: mmEntry.multimarca,
   };
 }
 
 export function parseBaseValues(
   values: string[][],
-  lookup: Map<string, string>,
+  lookup: Map<string, MmPdvEntry>,
 ): VentaRow[] {
   if (values.length <= 1) {
     return [];
@@ -82,14 +84,14 @@ export function parseBaseValues(
     .filter((row) => row.fecha || row.identificador);
 }
 
-export function parseVendedorLookup(values: string[][]): Map<string, string> {
+export function parseMmPdvLookup(values: string[][]): Map<string, MmPdvEntry> {
   if (values.length <= 1) {
     return new Map();
   }
 
   const [headerRow, ...dataRows] = values;
   const headerIndex = buildHeaderIndex(headerRow);
-  const lookup = new Map<string, string>();
+  const lookup = new Map<string, MmPdvEntry>();
 
   for (const cells of dataRows) {
     const dniResponsable = getCell(cells, headerIndex, [
@@ -100,9 +102,17 @@ export function parseVendedorLookup(values: string[][]): Map<string, string> {
       "Nombre_Vendedor_Zonificado",
       "NOMBRE_VENDEDOR_ZONIFICADO",
     ]);
+    const multimarca = getCell(cells, headerIndex, [
+      "Nombre y Apellido Multimarca/Pdv",
+      "Nombre y Apellido Multimarca/PDV",
+      "NOMBRE Y APELLIDO MULTIMARCA/PDV",
+    ]);
 
-    if (dniResponsable && nombre) {
-      lookup.set(dniResponsable, nombre);
+    if (dniResponsable && (nombre || multimarca)) {
+      lookup.set(dniResponsable, {
+        nombreVendedorZonificado: nombre || "Sin vendedor zonificado",
+        multimarca: multimarca || "Sin multimarca",
+      });
     }
   }
 
@@ -119,7 +129,7 @@ export async function fetchVentas(): Promise<VentaRow[]> {
     getSheetValues(mmRange),
   ]);
 
-  const lookup = parseVendedorLookup(mmValues);
+  const lookup = parseMmPdvLookup(mmValues);
   return parseBaseValues(baseValues, lookup);
 }
 

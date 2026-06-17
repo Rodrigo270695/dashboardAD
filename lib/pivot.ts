@@ -10,10 +10,17 @@ export interface PivotMetrics {
   prepagoPortabilidad: number;
 }
 
+export interface PivotMultimarcaRow {
+  id: string;
+  multimarca: string;
+  metrics: PivotMetrics;
+}
+
 export interface PivotVendedorRow {
   id: string;
   nombreVendedorZonificado: string;
   metrics: PivotMetrics;
+  multimarcas: PivotMultimarcaRow[];
 }
 
 export interface PivotZonalGroup {
@@ -27,6 +34,7 @@ export interface PivotTableData {
   totals: PivotMetrics;
   totalRows: number;
   totalVendedores: number;
+  totalMultimarcas: number;
   socioFilter: string;
   accionFilter: string;
 }
@@ -76,6 +84,31 @@ export function totalGeneral(m: PivotMetrics) {
   return totalPostpago(m) + totalPrepago(m);
 }
 
+type NestedPivotMap = Map<string, Map<string, Map<string, PivotMetrics>>>;
+
+function ensureNestedMaps(
+  zonalMap: NestedPivotMap,
+  zonal: string,
+  vendedor: string,
+  multimarca: string,
+): PivotMetrics {
+  if (!zonalMap.has(zonal)) {
+    zonalMap.set(zonal, new Map());
+  }
+
+  const vendedorMap = zonalMap.get(zonal)!;
+  if (!vendedorMap.has(vendedor)) {
+    vendedorMap.set(vendedor, new Map());
+  }
+
+  const multimarcaMap = vendedorMap.get(vendedor)!;
+  if (!multimarcaMap.has(multimarca)) {
+    multimarcaMap.set(multimarca, emptyMetrics());
+  }
+
+  return multimarcaMap.get(multimarca)!;
+}
+
 export function buildPivotTable(
   rows: VentaRow[],
   socioFilter = PIVOT_SOCIO_FILTER,
@@ -90,37 +123,49 @@ export function buildPivotTable(
     return matchSocio && matchAccion;
   });
 
-  const zonalMap = new Map<string, Map<string, PivotMetrics>>();
+  const zonalMap: NestedPivotMap = new Map();
 
   for (const row of filtered) {
     const zonal = row.zonal.trim() || "Sin zonal";
-    const nombre =
+    const vendedor =
       row.nombreVendedorZonificado.trim() || "Sin vendedor zonificado";
+    const multimarca = row.multimarca.trim() || "Sin multimarca";
 
-    if (!zonalMap.has(zonal)) {
-      zonalMap.set(zonal, new Map());
-    }
-
-    const vendedorMap = zonalMap.get(zonal)!;
-    if (!vendedorMap.has(nombre)) {
-      vendedorMap.set(nombre, emptyMetrics());
-    }
-
-    addToMetrics(vendedorMap.get(nombre)!, row);
+    const metrics = ensureNestedMaps(zonalMap, zonal, vendedor, multimarca);
+    addToMetrics(metrics, row);
   }
 
   let totalVendedores = 0;
+  let totalMultimarcas = 0;
 
   const groups: PivotZonalGroup[] = [...zonalMap.entries()]
     .sort(([a], [b]) => a.localeCompare(b, "es"))
     .map(([zonal, vendedorMap]) => {
       const vendedores: PivotVendedorRow[] = [...vendedorMap.entries()]
         .sort(([a], [b]) => a.localeCompare(b, "es"))
-        .map(([nombreVendedorZonificado, metrics]) => ({
-          id: `${zonal}-${nombreVendedorZonificado}`,
-          nombreVendedorZonificado,
-          metrics,
-        }));
+        .map(([nombreVendedorZonificado, multimarcaMap]) => {
+          const multimarcas: PivotMultimarcaRow[] = [...multimarcaMap.entries()]
+            .sort(([a], [b]) => a.localeCompare(b, "es"))
+            .map(([multimarca, metrics]) => ({
+              id: `${zonal}-${nombreVendedorZonificado}-${multimarca}`,
+              multimarca,
+              metrics,
+            }));
+
+          totalMultimarcas += multimarcas.length;
+
+          const metrics = multimarcas.reduce(
+            (acc, item) => sumMetrics(acc, item.metrics),
+            emptyMetrics(),
+          );
+
+          return {
+            id: `${zonal}-${nombreVendedorZonificado}`,
+            nombreVendedorZonificado,
+            metrics,
+            multimarcas,
+          };
+        });
 
       totalVendedores += vendedores.length;
 
@@ -142,6 +187,7 @@ export function buildPivotTable(
     totals,
     totalRows: filtered.length,
     totalVendedores,
+    totalMultimarcas,
     socioFilter,
     accionFilter,
   };

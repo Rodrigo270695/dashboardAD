@@ -13,6 +13,7 @@ export interface VentaRow {
   canalComercial: string;
   codigoPuntoVenta: string;
   nombreVendedorZonificado: string;
+  multimarca: string;
 }
 
 export function getUniqueSocios(rows: VentaRow[]): string[] {

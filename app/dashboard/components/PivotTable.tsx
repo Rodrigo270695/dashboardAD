@@ -36,12 +36,13 @@ function MetricsCells({
   variant = "zonal",
 }: {
   metrics: PivotMetrics;
-  variant?: "zonal" | "vendor" | "total";
+  variant?: "zonal" | "vendor" | "multimarca" | "total";
 }) {
   const cell = cn(
     "border-b border-slate-200/80 px-1.5 py-1 text-right tabular-nums",
     variant === "zonal" && "text-slate-700",
-    variant === "vendor" && "text-slate-500",
+    variant === "vendor" && "text-slate-600",
+    variant === "multimarca" && "text-slate-500",
     variant === "total" && "border-slate-600/50 text-white",
   );
 
@@ -79,10 +80,19 @@ export function PivotTable({
     () => data.groups.map((group) => group.zonal),
     [data.groups],
   );
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const allVendedores = useMemo(
+    () => data.groups.flatMap((group) => group.vendedores.map((v) => v.id)),
+    [data.groups],
+  );
+  const [expandedZonals, setExpandedZonals] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [expandedVendedores, setExpandedVendedores] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   function toggleZonal(zonal: string) {
-    setExpanded((current) => {
+    setExpandedZonals((current) => {
       const next = new Set(current);
       if (next.has(zonal)) {
         next.delete(zonal);
@@ -93,12 +103,26 @@ export function PivotTable({
     });
   }
 
+  function toggleVendedor(vendedorId: string) {
+    setExpandedVendedores((current) => {
+      const next = new Set(current);
+      if (next.has(vendedorId)) {
+        next.delete(vendedorId);
+      } else {
+        next.add(vendedorId);
+      }
+      return next;
+    });
+  }
+
   function expandAll() {
-    setExpanded(new Set(allZonals));
+    setExpandedZonals(new Set(allZonals));
+    setExpandedVendedores(new Set(allVendedores));
   }
 
   function collapseAll() {
-    setExpanded(new Set());
+    setExpandedZonals(new Set());
+    setExpandedVendedores(new Set());
   }
 
   return (
@@ -120,6 +144,9 @@ export function PivotTable({
             <span className="dash-stat-chip">{data.groups.length} zonales</span>
             <span className="dash-stat-chip">
               {data.totalVendedores} vendedores
+            </span>
+            <span className="dash-stat-chip">
+              {data.totalMultimarcas} multimarca
             </span>
           </div>
         </div>
@@ -172,7 +199,7 @@ export function PivotTable({
               >
                 Etiquetas de fila
                 <span className="mt-0.5 block text-[9px] font-normal text-slate-300">
-                  ZONAL / Vendedor
+                  ZONAL / Vendedor / Multimarca
                 </span>
               </th>
               <th
@@ -217,7 +244,7 @@ export function PivotTable({
 
           <tbody>
             {data.groups.map((group) => {
-              const isExpanded = expanded.has(group.zonal);
+              const isZonalExpanded = expandedZonals.has(group.zonal);
 
               return (
                 <Fragment key={group.zonal}>
@@ -231,7 +258,7 @@ export function PivotTable({
                         <ChevronDown
                           className={cn(
                             "h-3 w-3 shrink-0 text-blue-600 transition-transform duration-200",
-                            isExpanded ? "rotate-0" : "-rotate-90",
+                            isZonalExpanded ? "rotate-0" : "-rotate-90",
                           )}
                         />
                         <span className="leading-tight">{group.zonal}</span>
@@ -240,26 +267,67 @@ export function PivotTable({
                     <MetricsCells metrics={group.metrics} variant="zonal" />
                   </tr>
 
-                  {group.vendedores.map((vendedor) => (
-                    <tr
-                      key={vendedor.id}
-                      className={cn(
-                        "pivot-vendor-row bg-white hover:bg-slate-50/80",
-                        isExpanded
-                          ? "pivot-vendor-row--open"
-                          : "pivot-vendor-row--closed",
-                      )}
-                      aria-hidden={!isExpanded}
-                    >
-                      <td className="pivot-sticky-col border-b border-slate-100 bg-white px-2 py-1 pl-5 text-[10px] leading-snug text-slate-600">
-                        {vendedor.nombreVendedorZonificado}
-                      </td>
-                      <MetricsCells
-                        metrics={vendedor.metrics}
-                        variant="vendor"
-                      />
-                    </tr>
-                  ))}
+                  {group.vendedores.map((vendedor) => {
+                    const isVendedorExpanded = expandedVendedores.has(
+                      vendedor.id,
+                    );
+                    const showVendedor = isZonalExpanded;
+
+                    return (
+                      <Fragment key={vendedor.id}>
+                        <tr
+                          className={cn(
+                            "pivot-vendor-row bg-white hover:bg-slate-50/80",
+                            showVendedor
+                              ? "pivot-vendor-row--open"
+                              : "pivot-vendor-row--closed",
+                          )}
+                          aria-hidden={!showVendedor}
+                        >
+                          <td className="pivot-sticky-col border-b border-slate-100 bg-white p-0">
+                            <button
+                              type="button"
+                              onClick={() => toggleVendedor(vendedor.id)}
+                              className="flex w-full cursor-pointer items-center gap-1 px-2 py-1 pl-5 text-left text-[10px] font-medium leading-snug text-slate-700 transition-colors hover:bg-slate-50"
+                            >
+                              <ChevronDown
+                                className={cn(
+                                  "h-3 w-3 shrink-0 text-slate-400 transition-transform duration-200",
+                                  isVendedorExpanded ? "rotate-0" : "-rotate-90",
+                                )}
+                              />
+                              <span>{vendedor.nombreVendedorZonificado}</span>
+                            </button>
+                          </td>
+                          <MetricsCells
+                            metrics={vendedor.metrics}
+                            variant="vendor"
+                          />
+                        </tr>
+
+                        {vendedor.multimarcas.map((multimarca) => (
+                          <tr
+                            key={multimarca.id}
+                            className={cn(
+                              "pivot-vendor-row bg-white hover:bg-slate-50/80",
+                              showVendedor && isVendedorExpanded
+                                ? "pivot-vendor-row--open"
+                                : "pivot-vendor-row--closed",
+                            )}
+                            aria-hidden={!showVendedor || !isVendedorExpanded}
+                          >
+                            <td className="pivot-sticky-col border-b border-slate-100 bg-white px-2 py-1 pl-10 text-[10px] leading-snug text-slate-500">
+                              {multimarca.multimarca}
+                            </td>
+                            <MetricsCells
+                              metrics={multimarca.metrics}
+                              variant="multimarca"
+                            />
+                          </tr>
+                        ))}
+                      </Fragment>
+                    );
+                  })}
                 </Fragment>
               );
             })}

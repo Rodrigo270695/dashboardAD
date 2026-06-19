@@ -1,4 +1,5 @@
 import { getSheetValues } from "@/lib/google-sheets";
+import { normalizeBaseFecha } from "@/lib/dates";
 import { emptyMmPdvEntry, type MmPdvEntry } from "@/lib/mm-pdv";
 import type { VentaRow } from "@/lib/venta";
 
@@ -47,7 +48,7 @@ function toVentaRow(
   const mmEntry = lookup.get(dniResponsable) ?? emptyMmPdvEntry();
 
   return {
-    fecha: getCell(cells, headerIndex, ["FECHA"]),
+    fecha: normalizeBaseFecha(getCell(cells, headerIndex, ["FECHA"])),
     dniVendedor: getCell(cells, headerIndex, ["DNI_VENDEDOR"]),
     dniResponsable,
     socio: getCell(cells, headerIndex, ["SOCIO"]),
@@ -138,9 +139,9 @@ export async function fetchCuotaSheets(): Promise<{
   postpago: string[][];
 }> {
   const prepagoRange =
-    process.env.GOOGLE_SHEETS_RANGE_CUOTA_PREPAGO ?? "'Cuota Prepago'!A:AG";
+    process.env.GOOGLE_SHEETS_RANGE_CUOTA_PREPAGO ?? "'Cuota Prepago'!A:AZ";
   const postpagoRange =
-    process.env.GOOGLE_SHEETS_RANGE_CUOTA_POSTPAGO ?? "'Cuota Postpago'!A:AG";
+    process.env.GOOGLE_SHEETS_RANGE_CUOTA_POSTPAGO ?? "'Cuota Postpago'!A:AZ";
 
   const [prepago, postpago] = await Promise.all([
     getSheetValues(prepagoRange),

@@ -1,4 +1,4 @@
-import { parseCuotaDateHeader } from "@/lib/dates";
+import { normalizeBaseFecha } from "@/lib/dates";
 import type { VentaRow } from "@/lib/venta";
 
 export const CUOTA_SOCIO = "MACGA";
@@ -66,6 +66,11 @@ function parseQuotaValue(value: string | undefined): number {
   return Number.isFinite(num) ? num : 0;
 }
 
+function parseSheetDateHeader(header: string): string | null {
+  const normalized = normalizeBaseFecha(header);
+  return /^\d{4}-\d{2}-\d{2}$/.test(normalized) ? normalized : null;
+}
+
 export function parseCuotaSheet(values: string[][]): ParsedCuotaSheet {
   const vendors = new Map<string, CuotaVendorEntry>();
   const dateColumns: CuotaDateColumn[] = [];
@@ -78,7 +83,7 @@ export function parseCuotaSheet(values: string[][]): ParsedCuotaSheet {
 
   for (let columnIndex = 2; columnIndex < headerRow.length; columnIndex++) {
     const header = headerRow[columnIndex]?.trim() ?? "";
-    const isoDate = parseCuotaDateHeader(header);
+    const isoDate = parseSheetDateHeader(header);
     if (isoDate) {
       dateColumns.push({ isoDate, columnIndex, header });
     }
